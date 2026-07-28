@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: payment-management-backend
+    env: python
+    plan: starter
+    maxRegionRetries: 0
+    buildCommand: "pip install -r backend/requirements.txt"
+    startCommand: "uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT"
