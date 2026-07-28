@@ -34,8 +34,7 @@ function getDefaultWebAppUrl() {
 }
 
 let WEBAPP_URL = normalizeWebAppUrl(
-    localStorage.getItem('paytrack_webapp_url')
-    || new URLSearchParams(window.location.search).get('backendUrl')
+    new URLSearchParams(window.location.search).get('backendUrl')
     || getDefaultWebAppUrl()
 );
 
@@ -228,7 +227,7 @@ const _todayStr = (() => {
 function saveWebAppUrl() {
     const val = normalizeWebAppUrl(document.getElementById('webapp-url-input').value);
     if (!val || !val.startsWith('https://')) { toast('Valid https:// URL daalo', 'error'); return; }
-    WEBAPP_URL = val; localStorage.setItem('paytrack_webapp_url', val);
+    WEBAPP_URL = val;
     document.getElementById('config-banner').classList.add('hidden');
     toast('URL saved! Ab login karo...', 'success');
     setTimeout(() => { document.getElementById('login-screen').style.display = 'flex'; document.getElementById('login-email').focus(); }, 600);
@@ -238,7 +237,7 @@ function saveSettingsUrl() {
     const val = normalizeWebAppUrl(document.getElementById('settings-url-input').value);
     if (!val || !val.startsWith('https://')) { toast('Valid https:// URL daalo', 'error'); return; }
     const isChanged = val !== WEBAPP_URL;
-    WEBAPP_URL = val; localStorage.setItem('paytrack_webapp_url', val);
+    WEBAPP_URL = val;
     document.getElementById('config-banner').classList.add('hidden');
     closeModal('modal-settings');
     if (isChanged) {
