@@ -99,8 +99,8 @@
     <div class="content">
         <div class="config-banner hidden" id="config-banner">
             <span style="font-size:20px">⚙️</span>
-            <p><strong>Setup Required:</strong> Apps Script deploy karo (Execute as: Me, Access: Anyone), phir URL paste karo.</p>
-            <input type="text" id="webapp-url-input" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec">
+            <p><strong>Setup Required:</strong> Render backend URL paste karo, jisme /api endpoint ho.</p>
+            <input type="text" id="webapp-url-input" placeholder="https://your-render-backend.onrender.com/api">
             <button class="btn btn-primary btn-sm" onclick="saveWebAppUrl()">Save & Connect</button>
         </div>
 
@@ -353,11 +353,11 @@
         </div>
         <div class="modal-body">
             <div style="background:var(--blue-light);border:1px solid rgba(55,114,255,.2);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--blue);">
-                ℹ️ Apps Script deploy ka URL yahan paste karo. <strong>Execute as: Me, Access: Anyone</strong> setting honi chahiye.
+                ℹ️ Render backend ka URL yahan paste karo. Yahan /api endpoint dena hoga.
             </div>
             <div class="field">
                 <label>Current Web App URL</label>
-                <input type="text" id="settings-url-input" placeholder="https://script.google.com/macros/s/.../exec" style="font-family:'JetBrains Mono',monospace;font-size:12px;">
+                <input type="text" id="settings-url-input" placeholder="https://your-render-backend.onrender.com/api" style="font-family:'JetBrains Mono',monospace;font-size:12px;">
             </div>
             <div id="settings-current-url" style="margin-top:8px;font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;word-break:break-all;padding:6px 10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border);">
                 Current: Not set

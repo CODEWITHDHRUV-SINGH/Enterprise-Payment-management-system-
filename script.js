@@ -6,8 +6,26 @@
 //   • Download now respects current filter+sort (via _getFilteredActiveData)
 // ══════════════════════════════════════════════════════
 
-let WEBAPP_URL = localStorage.getItem('paytrack_webapp_url')
-    || 'https://script.google.com/macros/s/AKfycbw4WKLk2pyHLEqLIwM8qmg5E-ZXFYWvx94Br7SVWt7YDjWPhYs7Ij9n4anMLMsoxGI3/exec';
+function normalizeWebAppUrl(value) {
+    const raw = (value || '').trim();
+    if (!raw) return '';
+    if (/^https?:\/\//i.test(raw)) {
+        const withoutSlash = raw.replace(/\/+$/, '');
+        return withoutSlash.includes('/api') ? withoutSlash : withoutSlash + '/api';
+    }
+    if (raw.startsWith('/')) return raw;
+    return 'https://' + raw;
+}
+
+function getDefaultWebAppUrl() {
+    return 'https://payment-management-backend.onrender.com/api';
+}
+
+let WEBAPP_URL = normalizeWebAppUrl(
+    localStorage.getItem('paytrack_webapp_url')
+    || new URLSearchParams(window.location.search).get('backendUrl')
+    || getDefaultWebAppUrl()
+);
 
 // ── SESSION ────────────────────────────────────────────
 let _currentUser = null;
@@ -140,7 +158,7 @@ const _todayStr = (() => {
 
 // ── Config ─────────────────────────────────────────────
 function saveWebAppUrl() {
-    const val = document.getElementById('webapp-url-input').value.trim();
+    const val = normalizeWebAppUrl(document.getElementById('webapp-url-input').value);
     if (!val || !val.startsWith('https://')) { toast('Valid https:// URL daalo', 'error'); return; }
     WEBAPP_URL = val; localStorage.setItem('paytrack_webapp_url', val);
     document.getElementById('config-banner').classList.add('hidden');
@@ -149,7 +167,7 @@ function saveWebAppUrl() {
 }
 
 function saveSettingsUrl() {
-    const val = document.getElementById('settings-url-input').value.trim();
+    const val = normalizeWebAppUrl(document.getElementById('settings-url-input').value);
     if (!val || !val.startsWith('https://')) { toast('Valid https:// URL daalo', 'error'); return; }
     const isChanged = val !== WEBAPP_URL;
     WEBAPP_URL = val; localStorage.setItem('paytrack_webapp_url', val);
@@ -169,6 +187,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('today-date').textContent =
         now.toLocaleDateString('en-IN', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
     document.getElementById('f-dd').value = now.toISOString().split('T')[0];
+    const webappInput = document.getElementById('webapp-url-input');
+    const settingsInput = document.getElementById('settings-url-input');
+    if (webappInput) webappInput.value = WEBAPP_URL;
+    if (settingsInput) settingsInput.value = WEBAPP_URL;
     if (!WEBAPP_URL) {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('config-banner').classList.remove('hidden');
