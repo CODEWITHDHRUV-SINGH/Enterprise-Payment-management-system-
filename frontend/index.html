@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+
+<div id="login-screen">
+    <div class="login-card">
+        <div class="login-header">
+            <div class="login-brand-mark">💰</div>
+            <h1>PayTrack</h1>
+            <p>Tarun Paint Co. · Payment Management</p>
+        </div>
+        <div class="login-body">
+            <div class="field">
+                <label>Email Address</label>
+                <input type="email" id="login-email" placeholder="yourname@tarunpaint.com"
+                    onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+            </div>
+            <div class="field">
+                <label>Password</label>
+                <input type="password" id="login-pass" placeholder="••••••••"
+                    onkeydown="if(event.key==='Enter')doLogin()">
+            </div>
+            <div class="login-error" id="login-error"></div>
+            <button class="btn btn-primary" id="login-btn"
+                onclick="doLogin()" style="width:100%;justify-content:center;padding:11px;margin-top:4px">
+                Sign In →
+            </button>
+        </div>
+    </div>
+    <div class="login-footer-txt">PayTrack v14 &nbsp;·&nbsp; © 2026 Tarun Paint Co.</div>
+</div>
+
+<div class="progress-bar-wrap" id="progress-bar"><div class="progress-bar-fill" id="progress-fill"></div></div>
+
+<aside class="sidebar">
+    <div class="brand">
+        <div class="brand-row">
+            <div class="brand-mark">💰</div>
+            <div class="brand-text">
+                <div class="name">PayTrack</div>
+                <div class="tagline">Tarun Paint Co.</div>
+            </div>
+        </div>
+        <div class="date-chip">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5z"/></svg>
+            <span id="today-date">Loading...</span>
+        </div>
+    </div>
+
+    <div id="user-badge-container"></div>
+
+    <nav>
+        <div class="nav-group-label">Overview</div>
+        <button class="nav-btn active" data-page="dashboard" onclick="nav('dashboard')"><span class="nav-icon">⊞</span> Dashboard</button>
+        <button class="nav-btn" data-page="today" onclick="nav('today')"><span class="nav-icon">📞</span> Today's Calling<span class="nav-badge" id="badge-today">0</span></button>
+        <div class="nav-group-label">Payments</div>
+        <button class="nav-btn" data-page="active" onclick="nav('active')"><span class="nav-icon">⏳</span> Active Payments</button>
+        <button class="nav-btn" data-page="collection" onclick="nav('collection')"><span class="nav-icon">💰</span> Collection</button>
+        <button class="nav-btn" data-page="history" onclick="nav('history')"><span class="nav-icon">📋</span> Call History</button>
+        <button class="nav-btn" data-page="archived" onclick="nav('archived')"><span class="nav-icon">📁</span> Archives</button>
+        <div class="nav-group-label">Actions</div>
+        <button class="nav-btn" onclick="openModal('modal-add')"><span class="nav-icon">＋</span> Add Invoice</button>
+        <button class="nav-btn" onclick="hardRefresh()"><span class="nav-icon">🔄</span> Force Refresh</button>
+    </nav>
+    <div class="sidebar-footer">
+        <span class="sidebar-footer-txt">PayTrack v14 &nbsp;·&nbsp; © 2026</span>
+    </div>
+</aside>
+
+<div class="main">
+    <header class="topbar">
+        <span class="topbar-title" id="page-title">Dashboard</span>
+        <div class="topbar-sep"></div>
+        <span class="topbar-sub" id="page-sub">Payment overview & analytics</span>
+        <div class="top-buttons">
+            <a href="https://script.google.com/macros/s/AKfycbz_wZj7FzOGjIMBDbshqwFkP49KO3SYmko9f2iSnA6ylMac5qas1gUm5EqsYTPb2gs8SQ/exec"
+                target="_blank" class="link-btn secondary-btn">Scheme DB</a>
+            <a href="https://script.google.com/a/macros/tarunpaint.com/s/AKfycbxneNpBfFaHAM8uAKJZ4ZPoNAZw3yO1ep1877PZf38fnkK-MivxQNNMgpu73sGrt12O/exec"
+                target="_blank" class="link-btn secondary-btn">Pr Order DB</a>
+        </div>
+        <div class="topbar-right">
+            <div class="search-wrap">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" placeholder="Search customer, invoice..." id="g-search" oninput="globalSearch(this.value)">
+            </div>
+            <button class="btn btn-primary" onclick="openModal('modal-add')">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                Add Invoice
+            </button>
+        </div>
+    </header>
+
+    <div class="content">
+        <div class="config-banner hidden" id="config-banner">
+            <span style="font-size:20px">⚙️</span>
+            <p><strong>Setup Required:</strong> Apps Script deploy karo (Execute as: Me, Access: Anyone), phir URL paste karo.</p>
+            <input type="text" id="webapp-url-input" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec">
+            <button class="btn btn-primary btn-sm" onclick="saveWebAppUrl()">Save & Connect</button>
+        </div>
+
+        <!-- SEARCH RESULTS -->
+        <div class="page" id="page-search">
+            <div class="card">
+                <div class="card-head"><span class="card-title">Search Results</span><span class="card-subtitle" id="search-count"></span></div>
+                <div class="tbl-wrap"><table>
+                    <thead><tr><th>Customer</th><th>Phone No.</th><th>Invoice</th><th>Dispatch</th><th>Balance</th><th>Due Date</th><th>Due Days</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="tbl-search"></tbody>
+                </table></div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div class="page active" id="page-dashboard">
+            <div class="card section-gap">
+                <div class="card-body" style="padding:10px 20px;background:var(--navy);color:#fff;border-radius:var(--radius-lg)">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <div>
+                            <span style="font-size:12px;opacity:0.8">TOTAL OUTSTANDING</span>
+                            <div id="s-total" style="font-size:32px;font-weight:800;font-family:'JetBrains Mono'">—</div>
+                        </div>
+                        <div style="text-align:right">
+                            <span style="font-size:12px;opacity:0.8;display:block">LAST UPDATED</span>
+                            <span style="font-size:13px;font-weight:600" id="last-update-time">—</span>
+                            <span id="cache-indicator"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-row">
+                <div class="stat-card" style="border:none;box-shadow:var(--shadow-premium)"><div class="stat-accent" style="background:var(--purple)"></div><div class="stat-top"><span class="stat-label">Active Parties</span><div class="stat-icon-wrap" style="background:var(--purple-bg)">👤</div></div><div class="stat-value" id="s-parties">—</div><div class="stat-footer" id="s-records">—</div></div>
+                <div class="stat-card" style="border:none;box-shadow:var(--shadow-premium)"><div class="stat-accent" style="background:var(--red)"></div><div class="stat-top"><span class="stat-label">Critical Overdue</span><div class="stat-icon-wrap" style="background:var(--red-bg)">🚨</div></div><div class="stat-value" id="s-overdue" style="color:var(--red)">—</div><div class="stat-footer">Past due date</div></div>
+                <div class="stat-card" style="border:none;box-shadow:var(--shadow-premium)"><div class="stat-accent" style="background:var(--yellow)"></div><div class="stat-top"><span class="stat-label">Due Soon</span><div class="stat-icon-wrap" style="background:var(--yellow-bg)">⏰</div></div><div class="stat-value" id="s-soon" style="color:var(--yellow)">—</div><div class="stat-footer">Due within 7 days</div></div>
+                <div class="stat-card" style="border:none;box-shadow:var(--shadow-premium)"><div class="stat-accent" style="background:linear-gradient(90deg,var(--blue),#60A5FA)"></div><div class="stat-top"><span class="stat-label">Action Today</span><div class="stat-icon-wrap" style="background:var(--blue-light)">📞</div></div><div class="stat-value" id="s-calls" style="color:var(--blue)">—</div><div class="stat-footer">Ready to call</div></div>
+            </div>
+            <div class="grid-2">
+                <div class="card" style="border:none;box-shadow:var(--shadow-premium)">
+                    <div class="card-head" style="background:linear-gradient(to right,#fff,#F8FAFD)">
+                        <div class="stat-icon-wrap" style="background:var(--blue-light);font-size:14px">📉</div>
+                        <span class="card-title">Aging Analysis</span>
+                        <span class="card-subtitle">Outstanding by period</span>
+                    </div>
+                    <div class="card-body" id="aging-container">
+                        <div id="aging-sk"></div>
+                    </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:14px">
+                    <div class="card">
+                        <div class="card-head"><span class="card-title">Quick Actions</span></div>
+                        <div class="card-body" style="display:flex;flex-direction:column;gap:8px;padding:14px 16px">
+                            <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="nav('today')">📞 Start Today's Calling</button>
+                            <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="openModal('modal-add')">＋ Add New Invoice</button>
+                            <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="nav('collection')">💰 View Collections</button>
+                            <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="loadDashboard(true)">↺ Refresh Dashboard</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-head"><span class="card-title">🚨 Critical Overdue Accounts</span><button class="btn btn-outline btn-sm" onclick="nav('active')" style="margin-left:auto">View All →</button></div>
+                <div class="tbl-wrap"><table>
+                    <thead><tr><th>#</th><th>Customer</th><th>Invoice No.</th><th>Dispatch Date</th><th>Balance</th><th>Due Days</th><th>Priority</th><th>Action</th></tr></thead>
+                    <tbody id="tbl-overdue"></tbody>
+                </table></div>
+            </div>
+        </div>
+
+        <!-- TODAY'S CALLING -->
+        <div class="page" id="page-today">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+                <button class="ftab active" id="tab-today-calling" onclick="setTodayFilter('today',this)">📞 Today Calling <span id="today-count-badge" style="background:var(--blue);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:4px">0</span></button>
+                <button class="ftab" id="tab-pending-calling" onclick="setTodayFilter('pending',this)">⏳ Pending <span id="pending-count-badge" style="background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:4px">0</span></button>
+                <div class="summary-chips" id="today-chips"></div>
+            </div>
+            <div class="call-list" id="call-list-container"></div>
+        </div>
+
+        <!-- ACTIVE PAYMENTS -->
+        <div class="page" id="page-active">
+            <div class="filter-tabs">
+                <button class="ftab active" onclick="filterActive('all',this)">All</button>
+                <button class="ftab" onclick="filterActive('Active',this)">🔵 Active</button>
+                <button class="ftab" onclick="filterActive('Critical',this)">🔴 Critical</button>
+                <button class="ftab" onclick="filterActive('High',this)">🟠 High</button>
+                <button class="ftab" onclick="filterActive('Medium',this)">🟡 Medium</button>
+                <button class="ftab" onclick="filterActive('Normal',this)">🟢 Normal</button>
+                <button class="ftab" onclick="filterActive('Reminder',this)">🔵 Reminder</button>
+                <button class="ftab" onclick="filterActive('Paid',this)">✅ Paid</button>
+
+                <select id="sp-filter" onchange="applySalesPersonFilter(this.value)"
+                    style="margin-left:auto;padding:6px 12px;border-radius:20px;font-size:12.5px;font-weight:600;border:1.5px solid var(--border);background:var(--white);color:var(--text-secondary);cursor:pointer;font-family:inherit;">
+                    <option value="">👤 All Sales Persons</option>
+                </select>
+
+                <select id="sort-select" onchange="applySortFilter(this.value)"
+                    style="padding:6px 12px;border-radius:20px;font-size:12.5px;font-weight:600;border:1.5px solid var(--border);background:var(--white);color:var(--text-secondary);cursor:pointer;font-family:inherit;">
+                    <option value="">↕️ Default Sort</option>
+                    <option value="dealer-asc">Dealer A → Z</option>
+                    <option value="dealer-desc">Dealer Z → A</option>
+                    <option value="balance-asc">Balance: Low → High</option>
+                    <option value="balance-desc">Balance: High → Low</option>
+                </select>
+
+                <button class="btn btn-sm btn-ghost" onclick="downloadActiveExcel()" style="color:var(--green);border-color:var(--green-bg)">📥 Download</button>
+            </div>
+            <div class="card">
+                <div class="card-head">
+                    <span class="card-title">Active Payments</span>
+                    <span class="card-subtitle" id="active-count"></span>
+                    <span id="active-swr-badge"></span>
+                    <button class="btn btn-ghost btn-sm" onclick="loadActive(true)" style="margin-left:8px">↺</button>
+                </div>
+                <div class="tbl-wrap"><table>
+                    <thead><tr><th>#</th><th>Customer</th><th>Phone No.</th><th>Invoice</th><th>Dealer Type</th><th>Sales Person</th><th>Location</th><th>Invoice Amt</th><th>Balance</th><th>Dispatch</th><th>Due Date</th><th>Due Days</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead>
+                    <tbody id="tbl-active"></tbody>
+                </table></div>
+                <div class="pagination" id="active-pagination"></div>
+            </div>
+        </div>
+
+        <!-- COLLECTION -->
+        <div class="page" id="page-collection">
+            <div id="collection-container">
+                <div class="empty-state"><span class="icon">💰</span><p>Loading collection data...</p></div>
+            </div>
+        </div>
+
+        <!-- CALL HISTORY -->
+        <div class="page" id="page-history">
+            <div class="card">
+                <div class="card-head">
+                    <span class="card-title">Call History</span>
+                    <span id="history-swr-badge"></span>
+                    <button class="btn btn-ghost btn-sm" onclick="loadHistory(true)" style="margin-left:auto">↺ Refresh</button>
+                </div>
+                <div class="tbl-wrap"><table>
+                    <thead><tr><th>#</th><th>Date & Time</th><th>Customer</th><th>Invoice</th><th>Amount Recd.</th><th>Scheduled For</th><th>Next Follow-up</th><th>Remarks</th><th>ADJ.</th><th>ADJ. Remarks</th></tr></thead>
+                    <tbody id="tbl-history"></tbody>
+                </table></div>
+                <div class="pagination" id="history-pagination"></div>
+            </div>
+        </div>
+
+        <!-- ARCHIVED -->
+        <div class="page" id="page-archived">
+            <div class="card">
+                <div class="card-head">
+                    <span class="card-title">Archived Payments</span>
+                    <span class="card-subtitle" id="archive-count">Historical paid records</span>
+                    <span id="archived-swr-badge"></span>
+                    <button class="btn btn-primary btn-sm" onclick="runArchiveNow()" style="margin-left:auto;background:var(--green)">📦 Archive Paid Now</button>
+                </div>
+                <div class="tbl-wrap"><table>
+                    <thead><tr><th>#</th><th>Customer</th><th>Invoice</th><th>Dealer Type</th><th>Sales Person</th><th>Amount</th><th>Due Date</th><th>Priority</th><th>Archived On</th></tr></thead>
+                    <tbody id="tbl-archived"></tbody>
+                </table></div>
+                <div class="pagination" id="archived-pagination"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ADD INVOICE MODAL -->
+<div class="modal-bg" id="modal-add">
+    <div class="modal">
+        <div class="modal-hd"><div class="modal-hd-icon" style="background:var(--blue-light)">📄</div><span class="modal-title">Add New Invoice</span><button class="modal-close" onclick="closeModal('modal-add')">✕</button></div>
+        <div class="modal-body">
+            <div class="form-grid">
+                <div class="field"><label>Sales Person *</label><input id="f-sp" type="text" placeholder="Name"></div>
+                <div class="field"><label>Dispatch Date *</label><input id="f-dd" type="date"></div>
+                <div class="field"><label>Dealer Code *</label><input id="f-dc" type="text" placeholder="e.g. TPPLD1M"></div>
+                <div class="field"><label>Customer Name *</label><input id="f-cn" type="text" placeholder="M/s. Customer"></div>
+                <div class="field"><label>Location *</label><input id="f-loc" type="text" placeholder="City / Town"></div>
+                <div class="field"><label>Dealer Type</label><select id="f-dt"><option value="">-- Select --</option><option>Dealer</option><option>Sub-Dealer</option><option>Retailer</option><option>Direct</option></select></div>
+                <div class="field"><label>Order No.</label><input id="f-ord" type="text" placeholder="Order number"></div>
+                <div class="field"><label>Dealer Phone No.</label><input id="f-ph" type="text" placeholder="Phone number"></div>
+                <div class="field"><label>Invoice No. *</label><input id="f-inv" type="text" placeholder="Invoice number"></div>
+                <div class="field"><label>Invoice Amount (₹) *</label><input id="f-amt" type="number" placeholder="0.00"></div>
+                <div class="field full"><label>Credit Days *</label><input id="f-crd" type="number" placeholder="30" value="30"></div>
+            </div>
+        </div>
+        <div class="modal-ft"><button class="btn btn-ghost" onclick="closeModal('modal-add')">Cancel</button><button class="btn btn-primary" onclick="submitAddInvoice()">Add Invoice</button></div>
+    </div>
+</div>
+
+<!-- LOG CALL MODAL -->
+<div class="modal-bg" id="modal-call">
+    <div class="modal">
+        <div class="modal-hd"><div class="modal-hd-icon" style="background:var(--green-bg)">📞</div><span class="modal-title">Log Call</span><button class="modal-close" onclick="closeModal('modal-call')">✕</button></div>
+        <div class="modal-body">
+            <div class="invoice-info-box">
+                <div><div class="name" id="c-name">—</div><div class="meta">Invoice: <strong id="c-inv">—</strong> &nbsp;·&nbsp; <span id="c-loc">—</span></div></div>
+                <div class="balance" id="c-bal">₹0</div>
+            </div>
+            <input type="hidden" id="c-dc">
+            <div class="form-grid">
+                <div class="field"><label>Amount Received (₹)</label><input id="c-amt" type="number" placeholder="0 if no payment today"></div>
+                <div class="field"><label>Follow-up Date</label><input id="c-fup" type="date" required></div>
+                <div class="field full"><label>Customer Response / Remarks *</label><textarea id="c-rmk" placeholder="What did customer say?"></textarea></div>
+                <div class="field"><label>Adjustment (₹)</label><input id="c-adj" type="number" placeholder="0"></div>
+                <div class="field">
+                    <label>Adjustment Reason</label>
+                    <select id="c-adjr">
+                        <option value="">-- Select --</option>
+                        <option>Token</option>
+                        <option>Scheme</option>
+                        <option>CD</option>
+                        <option>Material Return</option>
+                        <option>Freight</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="modal-ft">
+            <button class="btn btn-ghost" onclick="closeModal('modal-call')">Cancel</button>
+            <button class="btn btn-primary" id="btn-save-call" onclick="submitLogCall()">Save Call Log</button>
+        </div>
+    </div>
+</div>
+
+<!-- INVOICE REMARKS MODAL -->
+<div class="modal-bg" id="modal-remarks">
+    <div class="modal modal-wide">
+        <div class="modal-hd">
+            <div class="modal-hd-icon" style="background:var(--blue-light)">📋</div>
+            <div>
+                <div class="modal-title" id="remarks-modal-name">Call History</div>
+                <div style="font-size:12px;color:var(--text-muted)" id="remarks-modal-meta"></div>
+            </div>
+            <button class="modal-close" onclick="closeModal('modal-remarks')">✕</button>
+        </div>
+        <div class="modal-body" style="padding:16px 20px">
+            <div id="remarks-modal-stats" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap"></div>
+            <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Call History</div>
+            <div id="remarks-modal-timeline" style="max-height:460px;overflow-y:auto"></div>
+        </div>
+    </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-bg" id="modal-settings">
+    <div class="modal" style="width:500px">
+        <div class="modal-hd">
+            <div class="modal-hd-icon" style="background:var(--yellow-bg)">⚙️</div>
+            <span class="modal-title">Settings — Web App URL</span>
+            <button class="modal-close" onclick="closeModal('modal-settings')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div style="background:var(--blue-light);border:1px solid rgba(55,114,255,.2);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--blue);">
+                ℹ️ Apps Script deploy ka URL yahan paste karo. <strong>Execute as: Me, Access: Anyone</strong> setting honi chahiye.
+            </div>
+            <div class="field">
+                <label>Current Web App URL</label>
+                <input type="text" id="settings-url-input" placeholder="https://script.google.com/macros/s/.../exec" style="font-family:'JetBrains Mono',monospace;font-size:12px;">
+            </div>
+            <div id="settings-current-url" style="margin-top:8px;font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;word-break:break-all;padding:6px 10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border);">
+                Current: Not set
+            </div>
+        </div>
+        <div class="modal-ft">
+            <button class="btn btn-ghost" onclick="closeModal('modal-settings')">Cancel</button>
+            <button class="btn btn-primary" onclick="saveSettingsUrl()">💾 Save URL</button>
+        </div>
+    </div>
+</div>
+
+<div class="loader-wrap" id="loader"><div class="spinner"></div><div class="loader-txt" id="loader-msg">Loading...</div></div>
+<div class="toast-wrap" id="toasts"></div>
+
+</body>
+</html>
