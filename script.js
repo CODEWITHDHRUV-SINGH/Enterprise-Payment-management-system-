@@ -103,6 +103,62 @@ const AppIndex = {
     built: false,
 };
 
+const REQUEST_QUEUE_KEY = 'paytrack_request_queue';
+const WRITE_ACTIONS = new Set(['addInvoice', 'logCall', 'archiveNow']);
+let RequestQueue = loadRequestQueue();
+let _queueProcessing = false;
+
+function loadRequestQueue() {
+    try {
+        const raw = localStorage.getItem(REQUEST_QUEUE_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveRequestQueue() {
+    try { localStorage.setItem(REQUEST_QUEUE_KEY, JSON.stringify(RequestQueue)); } catch (e) {}
+}
+
+function enqueueRequest(action, payload, query) {
+    RequestQueue.push({
+        action,
+        payload: payload === undefined ? null : payload,
+        query: query === undefined ? null : query,
+        createdAt: new Date().toISOString(),
+        attempts: 0,
+    });
+    saveRequestQueue();
+    toast('📩 Request queued. Connection restore pe automatically sync karega.', 'info');
+    processQueuedRequests();
+}
+
+function dequeueRequest(index) {
+    RequestQueue.splice(index, 1);
+    saveRequestQueue();
+}
+
+async function processQueuedRequests() {
+    if (_queueProcessing || !RequestQueue.length || !WEBAPP_URL) return;
+    _queueProcessing = true;
+    for (let i = RequestQueue.length - 1; i >= 0; i--) {
+        const item = RequestQueue[i];
+        const res = await api(item.action, item.payload, item.query, true, false);
+        if (res && res.success) {
+            dequeueRequest(i);
+            toast(`✅ Queued request "${item.action}" synced`, 'success');
+        } else {
+            item.attempts = (item.attempts || 0) + 1;
+            if (item.attempts >= 10) {
+                toast(`⚠️ Queued request "${item.action}" failed repeatedly. Server check karo.`, 'error');
+            }
+            saveRequestQueue();
+        }
+    }
+    _queueProcessing = false;
+}
+
 function _buildHistoryIndex(records) {
     AppIndex.invoiceHistory = new Map();
     AppIndex.dealerHistory  = new Map();
@@ -178,7 +234,10 @@ function saveSettingsUrl() {
         Object.keys(AppData).forEach(k => AppData[k] = null);
         AppIndex.invoiceHistory = null; AppIndex.dealerHistory = null; AppIndex.built = false;
         toast('✅ URL saved! Reconnecting...', 'success');
-        setTimeout(() => loadDashboard(true), 300);
+        setTimeout(() => {
+            loadDashboard(true);
+            processQueuedRequests();
+        }, 300);
     } else { toast('URL same hai — koi change nahi', 'info'); }
 }
 
@@ -201,9 +260,16 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('login-screen').style.display = 'none';
         _renderUserBadge(_currentUser);
         loadDashboard();
+        processQueuedRequests();
         return;
     }
     document.getElementById('login-email').focus();
+    processQueuedRequests();
+});
+
+window.addEventListener('online', () => {
+    toast('Network back! Queued requests sync karte hain...', 'info');
+    processQueuedRequests();
 });
 
 // ══════════════════════════════════════════════════════
@@ -231,7 +297,7 @@ function setProgress(p) { _pct = p; document.getElementById('progress-fill').sty
 // ══════════════════════════════════════════════════════
 // API
 // ══════════════════════════════════════════════════════
-async function api(action, payload, query, silent) {
+async function api(action, payload, query, silent, allowQueue = false) {
     if (!WEBAPP_URL) { toast('Pehle Web App URL set karo (⚙️ Settings)', 'error'); return null; }
     if (!silent) startProgress();
     const body = { action };
@@ -239,15 +305,34 @@ async function api(action, payload, query, silent) {
     if (query   !== undefined) body.query   = query;
     try {
         const res = await fetch(WEBAPP_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(body), redirect:'follow' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+            if (allowQueue && WRITE_ACTIONS.has(action)) {
+                enqueueRequest(action, payload, query);
+                return { success: true, message: 'Request queued for retry' };
+            }
+            throw new Error(`HTTP ${res.status}`);
+        }
         const text = await res.text();
-        if (!text || !text.trim()) throw new Error('Empty response.');
+        if (!text || !text.trim()) {
+            if (allowQueue && WRITE_ACTIONS.has(action)) {
+                enqueueRequest(action, payload, query);
+                return { success: true, message: 'Request queued for retry' };
+            }
+            throw new Error('Empty response.');
+        }
         const data = JSON.parse(text.replace(/^\uFEFF/,'').trim());
-        if (!data.success) { toast(data.message || 'Server error', 'error'); return null; }
+        if (!data.success) {
+            toast(data.message || 'Server error', 'error');
+            return null;
+        }
         return data;
     } catch(err) {
         let msg = err.message;
         if (msg.includes('Failed to fetch')) msg = 'CORS/network error. Deploy settings check karo.';
+        if (allowQueue && WRITE_ACTIONS.has(action)) {
+            enqueueRequest(action, payload, query);
+            return { success: true, message: 'Request queued for retry' };
+        }
         toast('Error: ' + msg, 'error'); return null;
     } finally { if (!silent) endProgress(); }
 }
@@ -305,13 +390,16 @@ async function hardRefresh() {
 async function loadDashboard(force) {
     if (!force && AppData.dashboard) {
         renderDashboard(AppData.dashboard, true);
-        _bgRefreshDashboard(); return;
+        _bgRefreshDashboard();
+        processQueuedRequests();
+        return;
     }
     const res = await api('getDashboardData');
     if (!res) return;
     AppData.dashboard = res.data;
     renderDashboard(res.data, res.fromCache);
     if (!AppData.today) api('getTodayCalling', null, null, true).then(r => { if (r) AppData.today = r.data; });
+    processQueuedRequests();
 }
 
 async function _bgRefreshDashboard() {
@@ -1004,7 +1092,7 @@ async function submitAddInvoice() {
     };
     if (!p.salesPerson||!p.customerName||!p.invoiceNo||!p.invoiceAmount) { toast('Sab required (*) fields bharo', 'error'); return; }
     loader('Invoice add ho raha hai...');
-    const res = await api('addInvoice', p);
+    const res = await api('addInvoice', p, null, false, true);
     hideLoader();
     if (!res) return;
     AppData.dashboard = null; AppData.today = null; AppData.activeAll = null;
@@ -1088,7 +1176,7 @@ async function submitLogCall() {
     AppData.dashboard = null;
 
     toast('📤 Saving call log...', 'info');
-    const res = await api('logCall', p, undefined, true);
+    const res = await api('logCall', p, undefined, true, true);
     if (res) {
         toast('✅ Call logged successfully!', 'success');
         if (AppState.currentPage === 'dashboard') loadDashboard(true);
@@ -1106,7 +1194,7 @@ async function submitLogCall() {
             const arr = AppIndex.invoiceHistory.get(compKey);
             if (arr && arr.length) arr.shift();
         }
-        toast('⚠️ Save failed — please try again', 'error');
+        toast('⚠️ Save failed — queued for retry if network issue', 'error');
     }
 }
 
@@ -1177,7 +1265,7 @@ async function globalSearch(val) {
 async function runArchiveNow() {
     if (!confirm('Sab PAID invoices Archive mein move honge. Continue?')) return;
     loader('Archiving paid invoices...');
-    const res = await api('archiveNow');
+    const res = await api('archiveNow', null, null, false, true);
     hideLoader();
     if (!res) return;
     AppData.dashboard = null; AppData.today = null; AppData.activeAll = null; AppData.archived = null;
