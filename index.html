@@ -373,6 +373,11 @@
 <div class="loader-wrap" id="loader"><div class="spinner"></div><div class="loader-txt" id="loader-msg">Loading...</div></div>
 <div class="toast-wrap" id="toasts"></div>
 
-<script src="script.js"></script>
+<script>
+        // Change this value in one place to point the app to a different backend.
+        window.PAYTRACK_BACKEND_URL = 'https://payment-management-backend.onrender.com/api';
+        // Alternatively, use a meta tag: <meta name="paytrack-backend-url" content="https://your-backend-url/api">
+    </script>
+    <script src="script.js"></script>
 </body>
 </html>

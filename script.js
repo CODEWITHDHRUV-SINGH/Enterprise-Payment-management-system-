@@ -18,8 +18,19 @@ function normalizeWebAppUrl(value) {
     return 'https://' + raw;
 }
 
+function getConfiguredWebAppUrl() {
+    if (typeof window !== 'undefined' && window.PAYTRACK_BACKEND_URL) {
+        return normalizeWebAppUrl(window.PAYTRACK_BACKEND_URL);
+    }
+    if (typeof document !== 'undefined') {
+        const meta = document.querySelector('meta[name="paytrack-backend-url"]');
+        if (meta && meta.content) return normalizeWebAppUrl(meta.content);
+    }
+    return '';
+}
+
 function getDefaultWebAppUrl() {
-    return 'https://payment-management-backend.onrender.com/api';
+    return getConfiguredWebAppUrl() || 'https://payment-management-backend.onrender.com/api';
 }
 
 let WEBAPP_URL = normalizeWebAppUrl(
