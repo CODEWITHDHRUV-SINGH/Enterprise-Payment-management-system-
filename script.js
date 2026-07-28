@@ -11,7 +11,8 @@ function normalizeWebAppUrl(value) {
     if (!raw) return '';
     if (/^https?:\/\//i.test(raw)) {
         const withoutSlash = raw.replace(/\/+$/, '');
-        return withoutSlash.includes('/api') ? withoutSlash : withoutSlash + '/api';
+        if (withoutSlash.includes('/api') || withoutSlash.includes('/exec')) return withoutSlash;
+        return withoutSlash + '/api';
     }
     if (raw.startsWith('/')) return raw;
     return 'https://' + raw;
